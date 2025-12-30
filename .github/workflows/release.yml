@@ -66,6 +66,8 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/v')
+    permissions:
+      contents: write
 
     steps:
       - uses: actions/checkout@v4
@@ -75,11 +77,14 @@ jobs:
         with:
           path: ./artifacts
 
-      - name: Create Release
+      - name: Create or Update Release
         uses: softprops/action-gh-release@v1
         with:
           files: ./artifacts/**/*
           generate_release_notes: true
+          fail_on_unmatched_files: false
+          draft: false
+          prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
