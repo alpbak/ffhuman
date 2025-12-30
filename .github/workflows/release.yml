@@ -98,12 +98,27 @@ jobs:
             --wait \
             --timeout 30m
           
-          # Staple the notarization ticket to the binary
-          xcrun stapler staple "$BINARY_PATH"
+          # Verify binary exists
+          if [ ! -f "$BINARY_PATH" ]; then
+            echo "Error: Binary not found at $BINARY_PATH"
+            exit 1
+          fi
           
-          # Verify notarization
-          xcrun stapler validate "$BINARY_PATH"
-          spctl --assess --verbose "$BINARY_PATH"
+          # Wait a moment for Apple's servers to propagate the ticket
+          echo "Waiting for notarization ticket to propagate..."
+          sleep 10
+          
+          # Change to binary directory for stapling
+          cd "$GITHUB_WORKSPACE/target/${{ matrix.target }}/release"
+          
+          # Staple the notarization ticket to the binary
+          xcrun stapler staple ffhuman
+          
+          # Verify stapling worked
+          xcrun stapler validate ffhuman
+          
+          # Verify Gatekeeper acceptance
+          spctl --assess --verbose ffhuman
 
       - name: Cleanup keychain (macOS)
         if: matrix.os == 'macos-latest' && always()
