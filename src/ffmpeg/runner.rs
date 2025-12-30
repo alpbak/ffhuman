@@ -62,7 +62,7 @@ impl CliRunner {
         let mut cmd = Command::new(&step.program);
         cmd.args(&step.args);
         cmd.stderr(Stdio::piped());
-        cmd.stdout(Stdio::piped());
+        cmd.stdout(Stdio::null()); // Discard stdout to prevent deadlock
 
         let mut child = cmd.spawn().context("failed to execute ffmpeg")?;
         let stderr = child.stderr.take().ok_or_else(|| anyhow!("failed to capture stderr"))?;
