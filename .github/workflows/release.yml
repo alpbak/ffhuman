@@ -83,11 +83,11 @@ jobs:
           APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         run: |
-          BINARY_PATH=target/${{ matrix.target }}/release/ffhuman
-          ZIP_PATH=$RUNNER_TEMP/ffhuman.zip
+          BINARY_PATH="$GITHUB_WORKSPACE/target/${{ matrix.target }}/release/ffhuman"
+          ZIP_PATH="$RUNNER_TEMP/ffhuman.zip"
           
           # Create zip for notarization
-          cd target/${{ matrix.target }}/release
+          cd "$GITHUB_WORKSPACE/target/${{ matrix.target }}/release"
           zip "$ZIP_PATH" ffhuman
           
           # Submit for notarization
