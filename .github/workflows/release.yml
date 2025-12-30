@@ -76,6 +76,35 @@ jobs:
           # Verify signing
           codesign --verify --verbose target/${{ matrix.target }}/release/ffhuman
 
+      - name: Notarize binary (macOS)
+        if: matrix.os == 'macos-latest'
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          BINARY_PATH=target/${{ matrix.target }}/release/ffhuman
+          ZIP_PATH=$RUNNER_TEMP/ffhuman.zip
+          
+          # Create zip for notarization
+          cd target/${{ matrix.target }}/release
+          zip "$ZIP_PATH" ffhuman
+          
+          # Submit for notarization
+          xcrun notarytool submit "$ZIP_PATH" \
+            --apple-id "$APPLE_ID" \
+            --password "$APPLE_APP_SPECIFIC_PASSWORD" \
+            --team-id "$APPLE_TEAM_ID" \
+            --wait \
+            --timeout 30m
+          
+          # Staple the notarization ticket to the binary
+          xcrun stapler staple "$BINARY_PATH"
+          
+          # Verify notarization
+          xcrun stapler validate "$BINARY_PATH"
+          spctl --assess --verbose "$BINARY_PATH"
+
       - name: Cleanup keychain (macOS)
         if: matrix.os == 'macos-latest' && always()
         run: |
