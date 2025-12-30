@@ -10,11 +10,17 @@
 Because this:
 
 ```bash
+ffhuman convert video.mp4 to gif
+```
+
+is much easier to remember then this:
+
+```bash
 ffmpeg -y -i input.mp4 -vf "fps=15,scale=480:-1:flags=lanczos,palettegen" palette.png && \
 ffmpeg -y -i input.mp4 -i palette.png -lavfi "fps=15,scale=480:-1:flags=lanczos[x];[x][1:v]paletteuse=dither=bayer" output.gif
 ```
 
-is **not a normal sentence**.
+This is **not a normal sentence**.
 
 It's a spell. A spell you Google every time. A spell you *never* remember. A spell that somehow breaks differently on every machine.
 
@@ -32,20 +38,14 @@ This is **the tool that worked for me**. It may or may not work for you. That's 
 
 You say **what you want**. `ffhuman` figures out **how to say it to FFmpeg**.
 
-No arcane flags. No copy-pasting from Stack Overflow from 2014. No pretending you "basically know FFmpeg".
-
-Example:
+For example, converting a video to a GIF:
 
 ```bash
 ffhuman convert video.mp4 to gif
 ```
 
-Instead of:
-
-```bash
-ffmpeg -y -i video.mp4 -vf "fps=15,scale=480:-1:flags=lanczos,palettegen" palette.png && \
-ffmpeg -y -i video.mp4 -i palette.png -lavfi "fps=15,scale=480:-1:flags=lanczos[x];[x][1:v]paletteuse=dither=bayer" output.gif
-```
+Same result as the FFmpeg command shown above.
+Less ritual. No palette files to clean up. No remembering why you need two passes.
 
 Same result. Less ritual. No palette files to clean up. No remembering why you need two passes.
 
