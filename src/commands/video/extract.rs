@@ -2,7 +2,7 @@ use crate::config::AppConfig;
 use crate::ffmpeg::recipes;
 use crate::ffmpeg::runner::Runner;
 use crate::model::{Duration, Time};
-use crate::util::{default_out, system::ensure_ffmpeg_exists};
+use crate::util::{base_stem, default_out, system::ensure_ffmpeg_exists};
 use anyhow::Result;
 use std::path::Path;
 
@@ -60,7 +60,7 @@ pub fn handle_extract_frames(
         output_dir.clone()
     } else {
         let dir = input.parent().unwrap_or_else(|| Path::new("."));
-        let dir_name = format!("{}_frames", input.file_stem().unwrap().to_string_lossy());
+        let dir_name = format!("{}_frames", base_stem(input)?);
         let frames_dir = dir.join(dir_name);
         std::fs::create_dir_all(&frames_dir)?;
         frames_dir
@@ -101,7 +101,7 @@ pub fn handle_detect_scenes(
         } else {
             input.parent().unwrap_or_else(|| Path::new("."))
         };
-        let stem = input.file_stem().unwrap().to_string_lossy();
+        let stem = base_stem(input)?;
         dir.join(format!("{stem}_scenes.txt"))
     };
 
@@ -135,7 +135,7 @@ pub fn handle_detect_black(
         } else {
             input.parent().unwrap_or_else(|| Path::new("."))
         };
-        let stem = input.file_stem().unwrap().to_string_lossy();
+        let stem = base_stem(input)?;
         dir.join(format!("{stem}_black_frames.txt"))
     };
 
@@ -483,7 +483,7 @@ pub fn handle_extract_keyframes(
         output_dir.clone()
     } else {
         let dir = input.parent().unwrap_or_else(|| Path::new("."));
-        let dir_name = format!("{}_keyframes", input.file_stem().unwrap().to_string_lossy());
+        let dir_name = format!("{}_keyframes", base_stem(input)?);
         let keyframes_dir = dir.join(dir_name);
         std::fs::create_dir_all(&keyframes_dir)?;
         keyframes_dir

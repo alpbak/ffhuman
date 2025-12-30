@@ -2,7 +2,7 @@ use crate::config::AppConfig;
 use crate::ffmpeg::recipes;
 use crate::ffmpeg::runner::Runner;
 use crate::model::types::Duration;
-use crate::util::{default_out, system::ensure_ffmpeg_exists};
+use crate::util::{base_stem, default_out, system::ensure_ffmpeg_exists};
 use anyhow::{Context, Result};
 use std::io::Write;
 use std::path::{Path, PathBuf};
@@ -74,7 +74,7 @@ pub fn handle_merge(
         } else {
             a.parent().unwrap_or_else(|| Path::new("."))
         };
-        let stem = a.file_stem().unwrap().to_string_lossy();
+        let stem = base_stem(a)?;
         dir.join(format!("{stem}_merged.mp4"))
     };
 
@@ -135,7 +135,7 @@ pub fn handle_compare(
         } else {
             video1.parent().unwrap_or_else(|| Path::new("."))
         };
-        let stem = video1.file_stem().unwrap().to_string_lossy();
+        let stem = base_stem(video1)?;
         dir.join(format!("{stem}_compared.mp4"))
     };
 
@@ -171,7 +171,7 @@ pub fn handle_montage(
         } else {
             videos[0].parent().unwrap_or_else(|| Path::new("."))
         };
-        let stem = videos[0].file_stem().unwrap().to_string_lossy();
+        let stem = base_stem(&videos[0])?;
         dir.join(format!("{stem}_montage.mp4"))
     };
 
@@ -207,7 +207,7 @@ pub fn handle_crossfade(
         } else {
             video1.parent().unwrap_or_else(|| Path::new("."))
         };
-        let stem = video1.file_stem().unwrap().to_string_lossy();
+        let stem = base_stem(video1)?;
         dir.join(format!("{stem}_crossfade.mp4"))
     };
 
@@ -242,7 +242,7 @@ pub fn handle_concat(
         } else {
             videos[0].parent().unwrap_or_else(|| Path::new("."))
         };
-        let stem = videos[0].file_stem().unwrap().to_string_lossy();
+        let stem = base_stem(&videos[0])?;
         dir.join(format!("{stem}_concat.mp4"))
     };
 
@@ -302,7 +302,7 @@ pub fn handle_sync_cameras(
         } else {
             videos[0].parent().unwrap_or_else(|| Path::new("."))
         };
-        let stem = videos[0].file_stem().unwrap().to_string_lossy();
+        let stem = base_stem(&videos[0])?;
         dir.join(format!("{stem}_synced.mp4"))
     };
 
@@ -335,7 +335,7 @@ pub fn handle_collage(
         } else {
             videos[0].parent().unwrap_or_else(|| Path::new("."))
         };
-        let stem = videos[0].file_stem().unwrap().to_string_lossy();
+        let stem = base_stem(&videos[0])?;
         dir.join(format!("{stem}_collage.mp4"))
     };
 
@@ -368,7 +368,7 @@ pub fn handle_slideshow(
         } else {
             images[0].parent().unwrap_or_else(|| Path::new("."))
         };
-        let stem = images[0].file_stem().unwrap().to_string_lossy();
+        let stem = base_stem(&images[0])?;
         dir.join(format!("{stem}_slideshow.mp4"))
     };
 

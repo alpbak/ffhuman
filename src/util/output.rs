@@ -5,11 +5,11 @@ use std::path::{Path, PathBuf};
 use std::fs;
 
 /// Get the base stem (filename without extension) from a path
-fn base_stem(path: &Path) -> Result<String> {
+pub fn base_stem(path: &Path) -> Result<String> {
     path.file_stem()
         .and_then(OsStr::to_str)
         .map(|s| s.to_string())
-        .ok_or_else(|| anyhow!("Invalid input filename"))
+        .ok_or_else(|| anyhow!("Invalid input filename: path must have a valid filename (got: {})", path.display()))
 }
 
 /// Generate default output path based on input, suffix, and extension

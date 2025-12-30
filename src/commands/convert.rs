@@ -2,7 +2,7 @@ use crate::config::AppConfig;
 use crate::ffmpeg::recipes;
 use crate::ffmpeg::runner::Runner;
 use crate::model::{ConvertFormat, QualityPreset, VideoCodec};
-use crate::util::{default_out, system::ensure_ffmpeg_exists};
+use crate::util::{base_stem, default_out, system::ensure_ffmpeg_exists};
 use crate::commands::video;
 use anyhow::Result;
 use std::path::Path;
@@ -110,7 +110,7 @@ pub fn handle_convert(
                 output_dir.clone()
             } else {
                 let dir = input.parent().unwrap_or_else(|| Path::new("."));
-                let dir_name = format!("{}_hls", input.file_stem().unwrap().to_string_lossy());
+                let dir_name = format!("{}_hls", base_stem(input)?);
                 let hls_dir = dir.join(dir_name);
                 std::fs::create_dir_all(&hls_dir)?;
                 hls_dir
@@ -128,7 +128,7 @@ pub fn handle_convert(
                 output_dir.clone()
             } else {
                 let dir = input.parent().unwrap_or_else(|| Path::new("."));
-                let dir_name = format!("{}_dash", input.file_stem().unwrap().to_string_lossy());
+                let dir_name = format!("{}_dash", base_stem(input)?);
                 let dash_dir = dir.join(dir_name);
                 std::fs::create_dir_all(&dash_dir)?;
                 dash_dir

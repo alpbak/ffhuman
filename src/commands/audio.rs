@@ -2,7 +2,7 @@ use crate::config::AppConfig;
 use crate::ffmpeg::recipes;
 use crate::ffmpeg::runner::Runner;
 use crate::model::{AudioFormat, AudioSyncDirection, Duration, Time, VolumeAdjustment, SpeedFactor};
-use crate::util::{default_out, system::ensure_ffmpeg_exists};
+use crate::util::{base_stem, default_out, system::ensure_ffmpeg_exists};
 use anyhow::Result;
 use std::path::Path;
 
@@ -69,7 +69,7 @@ pub fn handle_add_audio(
         } else {
             video.parent().unwrap_or_else(|| Path::new("."))
         };
-        dir.join(format!("{}_audio.mp4", video.file_stem().unwrap().to_string_lossy()))
+        dir.join(format!("{}_audio.mp4", base_stem(video)?))
     };
 
     let steps = recipes::add_audio_steps(video, audio, &out, config.overwrite);
@@ -183,7 +183,7 @@ pub fn handle_mix_audio(
         } else {
             audio1.parent().unwrap_or_else(|| Path::new("."))
         };
-        dir.join(format!("{}_mixed.mp3", audio1.file_stem().unwrap().to_string_lossy()))
+        dir.join(format!("{}_mixed.mp3", base_stem(audio1)?))
     };
 
     let steps = recipes::mix_audio_steps(audio1, audio2, &out, config.overwrite)?;

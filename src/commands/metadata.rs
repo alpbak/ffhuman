@@ -2,7 +2,7 @@ use crate::config::AppConfig;
 use crate::ffmpeg::recipes;
 use crate::ffmpeg::runner::Runner;
 use crate::model::types::MetadataField;
-use crate::util::{default_out, system::ensure_ffmpeg_exists, system::ensure_ffprobe_exists};
+use crate::util::{base_stem, default_out, system::ensure_ffmpeg_exists, system::ensure_ffprobe_exists};
 use anyhow::{Result, Context};
 use std::path::Path;
 use std::io::Write;
@@ -52,7 +52,7 @@ pub fn handle_extract_metadata(
             input.parent().unwrap_or_else(|| Path::new("."))
         };
         dir.join(format!("{}_metadata.{}", 
-            input.file_stem().unwrap().to_string_lossy(), ext))
+            base_stem(input)?, ext))
     };
 
     let format_str = match format {
