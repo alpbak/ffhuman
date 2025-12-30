@@ -41,6 +41,46 @@ jobs:
         if: matrix.os != 'windows-latest'
         run: strip target/${{ matrix.target }}/release/ffhuman
 
+      - name: Import signing certificate (macOS)
+        if: matrix.os == 'macos-latest'
+        env:
+          MACOS_CERTIFICATE: ${{ secrets.MACOS_CERTIFICATE }}
+          MACOS_CERTIFICATE_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
+        run: |
+          # Create variables
+          CERTIFICATE_PATH=$RUNNER_TEMP/build_certificate.p12
+          KEYCHAIN_PATH=$RUNNER_TEMP/build_keychain.keychain-db
+
+          # Decode certificate
+          echo "$MACOS_CERTIFICATE" | base64 --decode > $CERTIFICATE_PATH
+
+          # Create temporary keychain
+          security create-keychain -p "$MACOS_CERTIFICATE_PASSWORD" $KEYCHAIN_PATH
+          security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
+          security unlock-keychain -p "$MACOS_CERTIFICATE_PASSWORD" $KEYCHAIN_PATH
+
+          # Import certificate to keychain
+          security import $CERTIFICATE_PATH -P "$MACOS_CERTIFICATE_PASSWORD" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
+          security list-keychain -d user -s $KEYCHAIN_PATH
+
+      - name: Code sign binary (macOS)
+        if: matrix.os == 'macos-latest'
+        env:
+          MACOS_DEVELOPER_ID: ${{ secrets.MACOS_DEVELOPER_ID }}
+        run: |
+          codesign --force --deep --sign "$MACOS_DEVELOPER_ID" \
+            --options runtime \
+            --timestamp \
+            target/${{ matrix.target }}/release/ffhuman
+          
+          # Verify signing
+          codesign --verify --verbose target/${{ matrix.target }}/release/ffhuman
+
+      - name: Cleanup keychain (macOS)
+        if: matrix.os == 'macos-latest' && always()
+        run: |
+          security delete-keychain $RUNNER_TEMP/build_keychain.keychain-db || true
+
       - name: Create archive (Unix)
         if: matrix.os != 'windows-latest'
         run: |
