@@ -50,6 +50,29 @@ pub fn handle_compress(
                 runner.run(&step)?;
             }
         }
+        CompressTarget::Bitrate(target_bitrate) => {
+            if config.explain {
+                let v_kbps = (target_bitrate.bps / 1000).max(50);
+                let audio_bps = (target_bitrate.bps as f64 * 0.08).clamp(96_000.0, 160_000.0);
+                let a_kbps = (audio_bps / 1000.0).floor() as u64;
+                eprintln!(
+                    "[explain] Target bitrate={} => video≈{} kbps, audio≈{} kbps",
+                    target_bitrate,
+                    v_kbps,
+                    a_kbps
+                );
+                if two_pass {
+                    eprintln!("[explain] Using 2-pass libx264 for more accurate bitrate targeting.");
+                } else {
+                    eprintln!("[explain] Using single-pass encoding.");
+                }
+            }
+
+            let steps = recipes::compress_bitrate_steps(input, &out, target_bitrate.bps, config.overwrite, two_pass);
+            for step in steps {
+                runner.run(&step)?;
+            }
+        }
         CompressTarget::Quality(quality) => {
             if config.explain {
                 if two_pass {

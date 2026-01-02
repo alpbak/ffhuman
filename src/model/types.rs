@@ -111,6 +111,53 @@ impl fmt::Display for TargetSize {
     }
 }
 
+/// Represents a target bitrate that can be parsed from strings like "2000kbps", "2mbps", "500k"
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct TargetBitrate {
+    pub bps: u64, // bits per second
+}
+
+impl TargetBitrate {
+    /// Parse bitrate from string formats: "2000kbps", "2mbps", "500k", "1000000"
+    /// Bitrates use decimal multipliers (1000), not binary (1024)
+    pub fn parse(s: &str) -> Result<Self> {
+        let re = Regex::new(r"(?i)^\s*(\d+(?:\.\d+)?)\s*(bps|kbps|k|mbps|m|gbps|g)?\s*$")
+            .map_err(|e| anyhow!("Invalid regex: {}", e))?;
+        
+        let caps = re.captures(s)
+            .ok_or_else(|| anyhow!("Invalid bitrate: {s} (try 2000kbps, 2mbps, 500k)"))?;
+        
+        let num = caps.get(1).unwrap().as_str().parse::<f64>()?;
+        let unit = caps.get(2).map(|m| m.as_str().to_lowercase()).unwrap_or_default();
+
+        let mult: f64 = match unit.as_str() {
+            "" | "bps" => 1.0,
+            "kbps" | "k" => 1000.0,
+            "mbps" | "m" => 1_000_000.0,
+            "gbps" | "g" => 1_000_000_000.0,
+            _ => bail!("Invalid unit in bitrate: {s}"),
+        };
+
+        Ok(TargetBitrate {
+            bps: (num * mult).round() as u64,
+        })
+    }
+}
+
+impl fmt::Display for TargetBitrate {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        if self.bps >= 1_000_000_000 {
+            write!(f, "{:.2} Gbps", self.bps as f64 / 1_000_000_000.0)
+        } else if self.bps >= 1_000_000 {
+            write!(f, "{:.2} Mbps", self.bps as f64 / 1_000_000.0)
+        } else if self.bps >= 1000 {
+            write!(f, "{:.2} kbps", self.bps as f64 / 1000.0)
+        } else {
+            write!(f, "{} bps", self.bps)
+        }
+    }
+}
+
 /// Represents a resize target - either a preset (720p, 1080p, 4k) or explicit dimensions (WxH)
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ResizeTarget {
@@ -590,10 +637,11 @@ impl fmt::Display for Duration {
     }
 }
 
-/// Represents compression target - either size or quality preset
+/// Represents compression target - either size, bitrate, or quality preset
 #[derive(Debug, Clone, PartialEq)]
 pub enum CompressTarget {
     Size(TargetSize),
+    Bitrate(TargetBitrate),
     Quality(QualityPreset),
 }
 

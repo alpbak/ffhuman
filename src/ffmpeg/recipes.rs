@@ -259,6 +259,90 @@ pub fn compress_steps(
     }
 }
 
+/// Build steps for compressing video to target bitrate
+pub fn compress_bitrate_steps(
+    input: &Path,
+    output: &Path,
+    target_bitrate_bps: u64,
+    overwrite: bool,
+    two_pass: bool,
+) -> Vec<Step> {
+    // Convert to kbps for FFmpeg (which uses kbps for -b:v)
+    let v_kbps = (target_bitrate_bps / 1000).max(50); // Minimum 50 kbps
+    // Allocate ~8% for audio, clamp between 96-160 kbps
+    let audio_bps = (target_bitrate_bps as f64 * 0.08).clamp(96_000.0, 160_000.0);
+    let a_kbps = (audio_bps / 1000.0).floor() as u64;
+
+    if two_pass {
+        let null_sink = if cfg!(windows) { "NUL" } else { "/dev/null" };
+
+        vec![
+            // Pass 1: Analyze
+            Step::new(
+                "ffmpeg",
+                vec![
+                    "-y".to_string(),
+                    "-i".to_string(),
+                    input.to_string_lossy().to_string(),
+                    "-c:v".to_string(),
+                    "libx264".to_string(),
+                    "-b:v".to_string(),
+                    format!("{v_kbps}k"),
+                    "-pass".to_string(),
+                    "1".to_string(),
+                    "-an".to_string(),
+                    "-f".to_string(),
+                    "mp4".to_string(),
+                    null_sink.to_string(),
+                ],
+            ),
+            // Pass 2: Encode
+            Step::new(
+                "ffmpeg",
+                vec![
+                    if overwrite { "-y" } else { "-n" }.to_string(),
+                    "-i".to_string(),
+                    input.to_string_lossy().to_string(),
+                    "-c:v".to_string(),
+                    "libx264".to_string(),
+                    "-b:v".to_string(),
+                    format!("{v_kbps}k"),
+                    "-pass".to_string(),
+                    "2".to_string(),
+                    "-c:a".to_string(),
+                    "aac".to_string(),
+                    "-b:a".to_string(),
+                    format!("{a_kbps}k"),
+                    "-movflags".to_string(),
+                    "+faststart".to_string(),
+                    output.to_string_lossy().to_string(),
+                ],
+            ),
+        ]
+    } else {
+        // Single pass encoding
+        vec![Step::new(
+            "ffmpeg",
+            vec![
+                if overwrite { "-y" } else { "-n" }.to_string(),
+                "-i".to_string(),
+                input.to_string_lossy().to_string(),
+                "-c:v".to_string(),
+                "libx264".to_string(),
+                "-b:v".to_string(),
+                format!("{v_kbps}k"),
+                "-c:a".to_string(),
+                "aac".to_string(),
+                "-b:a".to_string(),
+                format!("{a_kbps}k"),
+                "-movflags".to_string(),
+                "+faststart".to_string(),
+                output.to_string_lossy().to_string(),
+            ],
+        )]
+    }
+}
+
 /// Build steps for compressing video with quality preset (CRF encoding)
 pub fn compress_quality_steps(
     input: &Path,

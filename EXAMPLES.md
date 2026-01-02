@@ -102,6 +102,22 @@ ffhuman compress video.mp4 to 1.5gb
 ffhuman compress video.mp4 to 10mb --two-pass
 ```
 
+### Compress to Target Bitrate
+
+```bash
+# Compress to 2000 kbps
+ffhuman compress video.mp4 to 2000kbps
+
+# Compress to 2 Mbps
+ffhuman compress video.mp4 to 2mbps
+
+# Compress to 500 kbps
+ffhuman compress video.mp4 to 500k
+
+# Compress with two-pass encoding (more accurate)
+ffhuman compress video.mp4 to 2000kbps --two-pass
+```
+
 ### Compress with Quality Presets
 
 ```bash

@@ -139,7 +139,26 @@ fn build_intent_from_step(input: &Path, step: &Value) -> Result<Intent> {
                 let quality_str = target_lower.strip_suffix("-quality").unwrap().trim();
                 CompressTarget::Quality(QualityPreset::parse(quality_str)?)
             } else {
-                CompressTarget::Size(TargetSize::parse(target_str)?)
+                // Try to parse as bitrate first
+                let target_trimmed = target_str.trim();
+                let target_lower_trimmed = target_trimmed.to_lowercase();
+                let looks_like_bitrate = target_lower_trimmed.ends_with("bps")
+                    || target_lower_trimmed.ends_with("kbps")
+                    || target_lower_trimmed.ends_with("mbps")
+                    || target_lower_trimmed.ends_with("gbps")
+                    || (target_lower_trimmed.ends_with('k') && !target_lower_trimmed.ends_with("mk"))
+                    || (target_lower_trimmed.ends_with('m') && !target_lower_trimmed.ends_with("mb") && !target_lower_trimmed.ends_with("gb"))
+                    || (target_lower_trimmed.ends_with('g') && !target_lower_trimmed.ends_with("gb"));
+                
+                if looks_like_bitrate {
+                    if let Ok(bitrate) = TargetBitrate::parse(target_str) {
+                        CompressTarget::Bitrate(bitrate)
+                    } else {
+                        CompressTarget::Size(TargetSize::parse(target_str)?)
+                    }
+                } else {
+                    CompressTarget::Size(TargetSize::parse(target_str)?)
+                }
             };
             
             Ok(Intent::Compress {

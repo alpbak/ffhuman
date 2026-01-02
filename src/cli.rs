@@ -59,13 +59,15 @@ pub enum Commands {
         codec: Option<String>,
     },
 
-    /// compress video.mp4 to 10mb  OR compress video.mp4 to high-quality
+    /// compress video.mp4 to 10mb  OR compress video.mp4 to 2000kbps  OR compress video.mp4 to high-quality
     ///
-    /// Compress video to a target file size or quality preset.
+    /// Compress video to a target file size, bitrate, or quality preset.
     ///
     /// Examples:
     ///   compress video.mp4 to 10mb
     ///   compress video.mp4 to 800k
+    ///   compress video.mp4 to 2000kbps
+    ///   compress video.mp4 to 2mbps
     ///   compress video.mp4 to high-quality
     ///   compress video.mp4 to low-quality
     ///   compress video.mp4 to 10mb --two-pass
@@ -2119,7 +2121,25 @@ impl Cli {
                     let quality = QualityPreset::parse(quality_str)?;
                     Ok(Intent::Compress { input, target: CompressTarget::Quality(quality), two_pass })
                 } else {
-                    // Try to parse as size
+                    // Try to parse as bitrate first (e.g., "2000kbps", "2mbps", "500k")
+                    // Bitrate patterns: ends with bps/kbps/mbps/gbps, or just k/m/g (but not mb/gb which are sizes)
+                    let target_trimmed = target.trim();
+                    let target_lower_trimmed = target_trimmed.to_lowercase();
+                    let looks_like_bitrate = target_lower_trimmed.ends_with("bps")
+                        || target_lower_trimmed.ends_with("kbps")
+                        || target_lower_trimmed.ends_with("mbps")
+                        || target_lower_trimmed.ends_with("gbps")
+                        || (target_lower_trimmed.ends_with('k') && !target_lower_trimmed.ends_with("mk"))
+                        || (target_lower_trimmed.ends_with('m') && !target_lower_trimmed.ends_with("mb") && !target_lower_trimmed.ends_with("gb"))
+                        || (target_lower_trimmed.ends_with('g') && !target_lower_trimmed.ends_with("gb"));
+                    
+                    if looks_like_bitrate {
+                        if let Ok(bitrate) = TargetBitrate::parse(&target) {
+                            return Ok(Intent::Compress { input, target: CompressTarget::Bitrate(bitrate), two_pass });
+                        }
+                    }
+                    
+                    // Fall back to size parsing
                     let target_size = TargetSize::parse(&target)?;
                     Ok(Intent::Compress { input, target: CompressTarget::Size(target_size), two_pass })
                 }

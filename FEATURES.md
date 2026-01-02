@@ -35,7 +35,7 @@ Convert video to optimized animated GIF with optional looping and optimization.
 ## Compression & Quality
 
 ### Compress
-Compress video to a target file size or quality preset (low-quality, medium-quality, high-quality, ultra-quality). Supports two-pass encoding for accurate size targeting.
+Compress video to a target file size, bitrate, or quality preset (low-quality, medium-quality, high-quality, ultra-quality). Supports two-pass encoding for accurate size and bitrate targeting.
 
 ### Analyze Quality
 Show detailed quality metrics (bitrate, resolution, codec info).
