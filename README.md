@@ -84,6 +84,24 @@ If this tool fits your workflow — great. If not — that's also fine.
 > FFmpeg must already be installed.
 > If you don't have FFmpeg, that's a different life choice.
 
+### Homebrew (macOS/Linux) - Recommended
+
+```bash
+brew tap alpbak/ffhuman
+brew install ffhuman
+```
+
+Update to latest version:
+```bash
+brew upgrade ffhuman
+```
+
+### Download Pre-built Binary
+
+Download the latest release from the [Releases page](https://github.com/alpbak/ffhuman/releases).
+
+Then move it to a directory in your `$PATH` (e.g., `/usr/local/bin` or `~/bin`).
+
 ### Build from source
 
 ```bash

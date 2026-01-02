@@ -2,6 +2,10 @@
 name = "ffhuman"
 version = "0.1.0"
 edition = "2021"
+license = "MIT"
+description = "FFmpeg for humans - a human-friendly CLI wrapper around FFmpeg"
+repository = "https://github.com/alpbak/ffhuman"
+homepage = "https://github.com/alpbak/ffhuman"
 
 [lib]
 name = "ffhuman"
