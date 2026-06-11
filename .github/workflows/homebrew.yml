@@ -1,0 +1,120 @@
+name: Update Homebrew Tap
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag (e.g. v1.0.7)"
+        required: true
+
+jobs:
+  update-tap:
+    name: Publish formula to homebrew-ffhuman
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Resolve release tag
+        id: tag
+        run: |
+          if [ -n "${{ github.event.release.tag_name }}" ]; then
+            echo "tag=${{ github.event.release.tag_name }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=${{ inputs.tag }}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Download release assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="${{ steps.tag.outputs.tag }}"
+          mkdir -p assets
+          gh release download "$TAG" \
+            --repo "${{ github.repository }}" \
+            --pattern "ffhuman-*.tar.gz" \
+            --dir assets
+
+      - name: Compute checksums
+        id: checksums
+        run: |
+          echo "macos_x86_64=$(sha256sum assets/ffhuman-macos-x86_64.tar.gz | awk '{print $1}')" >> "$GITHUB_OUTPUT"
+          echo "macos_aarch64=$(sha256sum assets/ffhuman-macos-aarch64.tar.gz | awk '{print $1}')" >> "$GITHUB_OUTPUT"
+          echo "linux_x86_64=$(sha256sum assets/ffhuman-linux-x86_64.tar.gz | awk '{print $1}')" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout homebrew tap
+        uses: actions/checkout@v4
+        with:
+          repository: alpbak/homebrew-ffhuman
+          token: ${{ secrets.HOMEBREW_TAP_TOKEN || github.token }}
+          path: homebrew-ffhuman
+
+      - name: Write formula
+        run: |
+          TAG="${{ steps.tag.outputs.tag }}"
+          VERSION="${TAG#v}"
+          MACOS_X86_64="${{ steps.checksums.outputs.macos_x86_64 }}"
+          MACOS_AARCH64="${{ steps.checksums.outputs.macos_aarch64 }}"
+          LINUX_X86_64="${{ steps.checksums.outputs.linux_x86_64 }}"
+
+          mkdir -p homebrew-ffhuman/Formula
+          cat > homebrew-ffhuman/Formula/ffhuman.rb <<EOF
+          class Ffhuman < Formula
+            desc "FFmpeg for humans - a human-friendly CLI wrapper around FFmpeg"
+            homepage "https://github.com/alpbak/ffhuman"
+            version "$VERSION"
+            license "MIT"
+
+            on_macos do
+              if Hardware::CPU.intel?
+                url "https://github.com/alpbak/ffhuman/releases/download/$TAG/ffhuman-macos-x86_64.tar.gz"
+                sha256 "$MACOS_X86_64"
+              elsif Hardware::CPU.arm?
+                url "https://github.com/alpbak/ffhuman/releases/download/$TAG/ffhuman-macos-aarch64.tar.gz"
+                sha256 "$MACOS_AARCH64"
+              end
+            end
+
+            on_linux do
+              if Hardware::CPU.intel?
+                url "https://github.com/alpbak/ffhuman/releases/download/$TAG/ffhuman-linux-x86_64.tar.gz"
+                sha256 "$LINUX_X86_64"
+              end
+            end
+
+            depends_on "ffmpeg"
+
+            def install
+              if OS.mac?
+                arch_dir = if Hardware::CPU.intel?
+                             "ffhuman-macos-x86_64"
+                           else
+                             "ffhuman-macos-aarch64"
+                           end
+              else
+                arch_dir = "ffhuman-linux-x86_64"
+              end
+
+              bin.install "\#{arch_dir}/ffhuman"
+            end
+
+            test do
+              assert_match "FFmpeg for humans", shell_output("\#{bin}/ffhuman --help")
+            end
+          end
+          EOF
+
+      - name: Push formula update
+        working-directory: homebrew-ffhuman
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add Formula/ffhuman.rb
+          if git diff --staged --quiet; then
+            echo "Formula already up to date."
+            exit 0
+          fi
+          git commit -m "ffhuman ${{ steps.tag.outputs.tag }}"
+          git push
